@@ -41,32 +41,36 @@ shared-team to per-user data.
 ## Database as code
 
 The schema is managed with the Supabase CLI, not by hand-editing tables.
-Migrations live in `supabase/migrations/` and are applied with `supabase db push`
-(hosted) or `supabase db reset` (local). The RLS migration also grants table
-privileges to the `authenticated` role, so the API works in any environment
-without depending on a dashboard setting. Demo data lives in `supabase/seed.sql`.
+Migrations live in `supabase/migrations/` and are validated on every pull request
+(a workflow replays them on a fresh database), then applied to production by a
+GitHub Action on merge to `main`. Locally, `supabase db reset` replays them into
+the local stack. The RLS migration also grants table privileges to the
+`authenticated` role, so the API works in any environment without depending on a
+dashboard setting. Demo data lives in `supabase/seed.sql`.
 
 ## Deploy it yourself
 
-### 1. Database (Supabase)
+### 1. Database (Supabase), deployed by CI
+
+Migrations reach the hosted project through the `Deploy database to production`
+GitHub Action, not a manual push. Set it up once:
 
 1. Create a project at [supabase.com](https://supabase.com) (free tier is fine).
-2. Install the [Supabase CLI](https://supabase.com/docs/guides/cli), then link
-   this repo to your project and push the schema:
-   ```bash
-   supabase login
-   supabase link --project-ref <your-project-ref>   # ref is in your project URL
-   supabase db push                                  # applies schema, RLS, grants
-   ```
-3. Load the demo data with the connection string from Project Settings > Database:
-   ```bash
-   psql "<connection-string>" -f supabase/seed.sql
-   ```
-   (Or paste `supabase/seed.sql` into the dashboard SQL editor. It is demo data,
-   not schema, so applying it by hand is fine.)
-4. Create the demo login: Authentication > Users > Add user, email
-   `demo@pipelinecrm.app`, password `demo1234`, with Auto Confirm on.
-5. From Project Settings > API, copy the Project URL and the anon public key.
+2. Add three repository secrets under Settings > Secrets and variables > Actions:
+   - `SUPABASE_ACCESS_TOKEN` from your Supabase account access tokens page
+   - `SUPABASE_DB_PASSWORD`, the project's database password
+   - `SUPABASE_PROJECT_ID`, the project ref (Settings > General > Reference ID)
+3. Deploy the schema. The workflow runs automatically when migrations land on
+   `main`; for the first deploy, run it on demand from Actions >
+   Deploy database to production > Run workflow.
+4. One-time data setup (the demo data and demo login are not schema, so they are
+   set up once by hand):
+   - Load demo data: paste `supabase/seed.sql` into the SQL editor, or
+     `psql "<connection-string>" -f supabase/seed.sql`.
+   - Create the demo login: Authentication > Users > Add user,
+     `demo@pipelinecrm.app` / `demo1234`, with Auto Confirm on.
+5. From Project Settings > API, copy the Project URL and anon public key for the
+   Vercel step below.
 
 ### 2. App (Vercel)
 
@@ -95,6 +99,16 @@ npm run build                  # typecheck + production build
 
 `supabase db reset` replays every migration from scratch and reloads the seed, so
 it is the fastest way to confirm the schema is reproducible.
+
+## CI/CD
+
+- `.github/workflows/ci.yml` runs on pull requests: it typechecks and builds the
+  frontend, and replays every migration plus the seed on a throwaway Supabase
+  stack, so a broken migration fails the PR.
+- `.github/workflows/deploy.yml` applies migrations to the production database on
+  merge to `main` (and on demand).
+- The frontend deploys separately: Vercel builds and ships it on every push to
+  `main` through its GitHub integration.
 
 ## Project structure
 

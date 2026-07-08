@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  frontend:
+    name: Frontend typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  migrations:
+    name: Validate migrations apply from scratch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      # Spin up the real local stack and replay every migration plus the seed.
+      # This fails the PR if a migration is broken or the seed no longer loads,
+      # which is how the missing table-grant bug would have been caught.
+      - name: Replay migrations and seed on a fresh database
+        run: |
+          supabase start
+          supabase db reset
