@@ -35,43 +35,66 @@ companies ──< deals ──< activities
 ```
 
 The SQL lives in `supabase/migrations/` (schema and RLS) and `supabase/seed.sql`
-(demo data). See `supabase/migrations/0002_rls.sql` for the access model and how
-to switch from shared-team to per-user data.
+(demo data). See the RLS migration for the access model and how to switch from
+shared-team to per-user data.
+
+## Database as code
+
+The schema is managed with the Supabase CLI, not by hand-editing tables.
+Migrations live in `supabase/migrations/` and are applied with `supabase db push`
+(hosted) or `supabase db reset` (local). The RLS migration also grants table
+privileges to the `authenticated` role, so the API works in any environment
+without depending on a dashboard setting. Demo data lives in `supabase/seed.sql`.
 
 ## Deploy it yourself
 
-### 1. Supabase
+### 1. Database (Supabase)
 
-1. Create a project at [supabase.com](https://supabase.com) (the free tier is
-   fine).
-2. In the SQL editor, run `supabase/migrations/0001_schema.sql`, then
-   `supabase/migrations/0002_rls.sql`.
-3. Create the demo user: Authentication > Users > Add user, email
-   `demo@pipelinecrm.app`, password `demo1234`, and confirm the email.
-4. In the SQL editor, run `supabase/seed.sql` to load demo companies and deals.
+1. Create a project at [supabase.com](https://supabase.com) (free tier is fine).
+2. Install the [Supabase CLI](https://supabase.com/docs/guides/cli), then link
+   this repo to your project and push the schema:
+   ```bash
+   supabase login
+   supabase link --project-ref <your-project-ref>   # ref is in your project URL
+   supabase db push                                  # applies schema, RLS, grants
+   ```
+3. Load the demo data with the connection string from Project Settings > Database:
+   ```bash
+   psql "<connection-string>" -f supabase/seed.sql
+   ```
+   (Or paste `supabase/seed.sql` into the dashboard SQL editor. It is demo data,
+   not schema, so applying it by hand is fine.)
+4. Create the demo login: Authentication > Users > Add user, email
+   `demo@pipelinecrm.app`, password `demo1234`, with Auto Confirm on.
 5. From Project Settings > API, copy the Project URL and the anon public key.
 
-### 2. Vercel
+### 2. App (Vercel)
 
-1. Push this repo to GitHub and import it at [vercel.com](https://vercel.com).
-   Vercel detects Vite automatically.
+1. Import this repo at [vercel.com](https://vercel.com); Vercel detects Vite.
 2. Add two environment variables:
    - `VITE_SUPABASE_URL` = your Project URL
    - `VITE_SUPABASE_ANON_KEY` = your anon public key
 3. Deploy. Every push to `main` redeploys automatically. `vercel.json` rewrites
    all routes to `index.html` so client-side deep links work.
 
-The anon key is safe to expose to the browser; it only grants what your RLS
-policies allow.
+The anon key is safe to expose to the browser; it only grants what the table
+grants and RLS policies allow.
 
 ## Local development
 
+Run the whole backend locally with the Supabase CLI (needs Docker):
+
 ```bash
 npm install
-cp .env.example .env.local   # fill in your Supabase URL and anon key
-npm run dev                  # http://localhost:5173
-npm run build                # typecheck + production build
+supabase start                 # local Postgres, Auth, and API in Docker
+supabase db reset              # replay migrations + seed into the local database
+cp .env.example .env.local     # then paste the API URL + anon key that `supabase start` printed
+npm run dev                    # http://localhost:5173
+npm run build                  # typecheck + production build
 ```
+
+`supabase db reset` replays every migration from scratch and reloads the seed, so
+it is the fastest way to confirm the schema is reproducible.
 
 ## Project structure
 
