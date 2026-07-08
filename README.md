@@ -89,13 +89,16 @@ grants and RLS policies allow.
 Run the whole backend locally with the Supabase CLI (needs Docker):
 
 ```bash
-npm install
+pnpm install
 supabase start                 # local Postgres, Auth, and API in Docker
 supabase db reset              # replay migrations + seed into the local database
 cp .env.example .env.local     # then paste the API URL + anon key that `supabase start` printed
-npm run dev                    # http://localhost:5173
-npm run build                  # typecheck + production build
+pnpm dev                       # http://localhost:5173
+pnpm build                     # typecheck + production build
 ```
+
+This project uses [pnpm](https://pnpm.io). Vercel detects it from
+`pnpm-lock.yaml` and installs with it automatically.
 
 `supabase db reset` replays every migration from scratch and reloads the seed, so
 it is the fastest way to confirm the schema is reproducible.
