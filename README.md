@@ -69,6 +69,9 @@ GitHub Action, not a manual push. Set it up once:
      `psql "<connection-string>" -f supabase/seed.sql`.
    - Create the demo login: Authentication > Users > Add user,
      `demo@pipelinecrm.app` / `demo1234`, with Auto Confirm on.
+   - Enable the scheduled demo reset: run `supabase/demo_reset.sql` once. It uses
+     pg_cron to re-seed the demo data every few hours, so the shared public demo
+     self-heals from edits and stays presentable.
 5. From Project Settings > API, copy the Project URL and anon public key for the
    Vercel step below.
 

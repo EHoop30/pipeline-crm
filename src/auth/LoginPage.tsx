@@ -96,6 +96,10 @@ export function LoginPage() {
           <p className="mt-1 text-slate-500">
             {DEMO_EMAIL} / {DEMO_PASSWORD}
           </p>
+          <p className="mt-1 text-xs text-slate-400">
+            Shared public demo. Data is visible to anyone who signs in and resets
+            every few hours.
+          </p>
           <button
             onClick={useDemo}
             className="mt-2 text-brand-600 hover:underline"

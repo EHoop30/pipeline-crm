@@ -39,6 +39,10 @@ export function Layout() {
           </div>
         </div>
       </header>
+      <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-800">
+        Public demo workspace. Anyone can sign in, the data is shared, and it
+        resets every few hours.
+      </div>
       <main className="mx-auto max-w-6xl px-4 py-6">
         <Outlet />
       </main>
